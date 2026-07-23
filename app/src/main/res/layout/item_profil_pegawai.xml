@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="8dp"
+    android:background="#FFFFFF"
+    android:foreground="?android:attr/selectableItemBackground">
+
+    <TextView
+        android:id="@+id/tvNamaProfil"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Nama Pegawai"
+        android:textStyle="bold"
+        android:textSize="14sp"
+        android:textColor="#000000" />
+
+    <TextView
+        android:id="@+id/tvUsernameProfil"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Username: "
+        android:textSize="12sp"
+        android:textColor="#333333" />
+
+    <TextView
+        android:id="@+id/tvPasswordProfil"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Password: "
+        android:textSize="12sp"
+        android:textColor="#333333" />
+
+    <TextView
+        android:id="@+id/tvNoTelpProfil"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="No Telp: "
+        android:textSize="12sp"
+        android:textColor="#333333" />
+
+    <TextView
+        android:id="@+id/tvJabatanProfil"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Jabatan: "
+        android:textSize="12sp"
+        android:textColor="#333333" />
+
+    <TextView
+        android:id="@+id/tvJKProfil"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Jenis Kelamin: "
+        android:textSize="12sp"
+        android:textColor="#333333" />
+
+    <TextView
+        android:id="@+id/tvAlamatProfil"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Alamat: "
+        android:textSize="12sp"
+        android:textColor="#333333" />
+
+</LinearLayout>

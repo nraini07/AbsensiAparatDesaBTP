@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@android:color/white">
+
+    <!-- BAR ATAS: tombol back + judul -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/tvBack"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/back_arrow"
+            android:textSize="24sp"
+            android:padding="4dp"
+            android:textColor="@android:color/black" />
+
+        <TextView
+            android:id="@+id/tvJudul"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="ABSEN LOKASI TUGAS"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:gravity="center"
+            android:textColor="@android:color/black" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="4dp"
+        android:background="#000000" />
+
+    <!-- Tanggal & Waktu -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="12dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="TANGGAL  :  "
+                android:textColor="@android:color/black" />
+
+            <TextView
+                android:id="@+id/tvTanggal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=".........."
+                android:textColor="@android:color/black" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="4dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="WAKTU     :  "
+                android:textColor="@android:color/black" />
+
+            <TextView
+                android:id="@+id/tvWaktu"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=".........."
+                android:textColor="@android:color/black" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- STATUS AREA TUGAS (PALING ATAS BAGIAN ABSENSI) -->
+    <TextView
+        android:id="@+id/tvStatusAreaTugas"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Status area tugas belum dicek"
+        android:gravity="center"
+        android:textSize="14sp"
+        android:textColor="@android:color/black"
+        android:layout_marginTop="12dp" />
+
+    <!-- JENIS ABSENSI -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="JENIS ABSENSI"
+        android:textStyle="bold"
+        android:layout_marginTop="8dp"
+        android:textColor="@android:color/black" />
+
+    <RadioGroup
+        android:id="@+id/rgJenisAbsensi"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="4dp">
+
+        <RadioButton
+            android:id="@+id/rbMasuk"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Masuk"
+            android:textColor="@android:color/black" />
+
+        <RadioButton
+            android:id="@+id/rbSakit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Sakit"
+            android:textColor="@android:color/black" />
+
+        <RadioButton
+            android:id="@+id/rbIzin"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Izin"
+            android:textColor="@android:color/black" />
+
+        <RadioButton
+            android:id="@+id/rbKeluar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Keluar"
+            android:textColor="@android:color/black" />
+
+    </RadioGroup>
+
+    <!-- LOKASI (SEJAJAR DENGAN KETERANGAN, DI BAWAH RADIO) -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="LOKASI"
+        android:textStyle="bold"
+        android:layout_marginTop="12dp"
+        android:textColor="@android:color/black" />
+
+    <EditText
+        android:id="@+id/etLokasi"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:background="@drawable/bg_edittext_round"
+        android:padding="8dp"
+        android:hint="Lokasi tugas saat ini"
+        android:inputType="none"
+        android:focusable="false"
+        android:clickable="false"
+        android:cursorVisible="false"
+        android:textColor="@android:color/black"
+        android:textColorHint="@android:color/darker_gray" />
+
+    <!-- KETERANGAN -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="KETERANGAN"
+        android:textStyle="bold"
+        android:layout_marginTop="12dp"
+        android:textColor="@android:color/black" />
+
+    <EditText
+        android:id="@+id/etKeterangan"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:background="@drawable/bg_edittext_round"
+        android:padding="8dp"
+        android:hint="Keterangan tambahan (opsional)"
+        android:textColor="@android:color/black"
+        android:textColorHint="@android:color/darker_gray" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="16dp" />
+
+    <Button
+        android:id="@+id/btnSimpanAbsensi"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:backgroundTint="#4CAF50"
+        android:text="SIMPAN ABSENSI"
+        android:textAllCaps="false"
+        android:textColor="@android:color/white" />
+
+</LinearLayout>

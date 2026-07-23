@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:gravity="center_horizontal"
+    android:background="@android:color/white">
+
+    <!-- Teks halo + nama pegawai -->
+    <TextView
+        android:id="@+id/tvHaloPegawai"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Halo, Pegawai"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textAlignment="center"
+        android:layout_marginBottom="4dp"
+        android:textColor="@android:color/black" />
+
+    <!-- Garis horizontal penuh (pembatas) -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#BDBDBD" />
+
+    <!-- Jarak setelah garis ke menu -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="20dp" />
+
+    <!-- Absensi Hari Ini -->
+    <LinearLayout
+        android:id="@+id/btnAbsensiHariIni"
+        android:layout_width="match_parent"
+        android:layout_height="139dp"
+        android:layout_marginBottom="16dp"
+        android:background="#4CAF50"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <ImageView
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginBottom="8dp"
+            android:contentDescription="Absensi Hari ini"
+            android:src="@drawable/ic_absensi_hari_ini" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="ABSENSI HARI INI"
+            android:textAlignment="center"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- Riwayat Absensi -->
+    <LinearLayout
+        android:id="@+id/btnRiwayatAbsensi"
+        android:layout_width="match_parent"
+        android:layout_height="139dp"
+        android:layout_marginBottom="16dp"
+        android:background="#4CAF50"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <ImageView
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginBottom="8dp"
+            android:src="@drawable/ic_riwayat_absensi" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="RIWAYAT ABSENSI"
+            android:textAlignment="center"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- Spacer biar tombol logout turun ke bawah -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <!-- Tombol LOGOUT -->
+    <ImageButton
+        android:id="@+id/btnLogoutPegawai"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_gravity="end"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/bg_logout_circle"
+        android:padding="12dp"
+        android:contentDescription="Logout"
+        android:src="@drawable/ic_logout" />
+
+</LinearLayout>
