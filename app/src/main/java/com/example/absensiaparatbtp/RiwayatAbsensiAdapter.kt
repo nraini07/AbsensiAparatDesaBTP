@@ -6,10 +6,10 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.example.absensiaparatbtp.database.AbsensiEntity
+import com.example.absensiaparatbtp.firebase.AbsensiRecord
 
 class RiwayatAbsensiAdapter(
-    private var items: List<AbsensiEntity>
+    private var items: List<AbsensiRecord>
 ) : RecyclerView.Adapter<RiwayatAbsensiAdapter.RiwayatViewHolder>() {
 
     inner class RiwayatViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -20,7 +20,7 @@ class RiwayatAbsensiAdapter(
         val tvKeterangan: TextView = itemView.findViewById(R.id.tvKeteranganRiwayat)
         val tvLokasi: TextView = itemView.findViewById(R.id.tvLokasiRiwayat)
 
-        fun bind(data: AbsensiEntity) {
+        fun bind(data: AbsensiRecord) {
             tvNama.text = data.namaPegawai
             tvTanggal.text = data.tanggal
             tvJam.text = data.waktu
@@ -33,8 +33,9 @@ class RiwayatAbsensiAdapter(
             }
 
             val statusArea = data.keteranganAreaTugas ?: ""
+            val akurasiText = data.akurasiMeter?.let { " (akurasi GPS ±${it.toInt()}m)" } ?: ""
             tvLokasi.text = if (statusArea.isNotEmpty()) {
-                "Lokasi: ${data.lokasi}\nStatus: $statusArea"
+                "Lokasi: ${data.lokasi}\nStatus: $statusArea$akurasiText"
             } else {
                 "Lokasi: ${data.lokasi}"
             }
@@ -53,7 +54,7 @@ class RiwayatAbsensiAdapter(
 
     override fun getItemCount(): Int = items.size
 
-    fun setData(newItems: List<AbsensiEntity>) {
+    fun setData(newItems: List<AbsensiRecord>) {
         items = newItems
         notifyDataSetChanged()
     }

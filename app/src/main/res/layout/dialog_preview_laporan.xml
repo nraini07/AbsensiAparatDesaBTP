@@ -6,29 +6,93 @@
     android:padding="16dp"
     android:background="#FFFFFF">
 
-    <!-- Judul dialog -->
-    <TextView
+    <!-- KOP SURAT DENGAN LOGO -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="LAPORAN ABSENSI APARAT"
+        android:orientation="horizontal"
+        android:paddingBottom="8dp"
+        android:gravity="center_vertical">
+
+        <!-- Logo -->
+        <ImageView
+            android:id="@+id/imgLogoDesa"
+            android:layout_width="60dp"
+            android:layout_height="70dp"
+            android:layout_marginEnd="12dp"
+            android:src="@drawable/logoasli"
+            android:scaleType="fitCenter" />
+
+        <!-- Teks kop surat -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center_horizontal">
+
+            <TextView
+                android:id="@+id/tvKopKabupaten"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="PEMERINTAH KABUPATEN MAMUJU"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:textColor="#000000"
+                android:gravity="center" />
+
+            <TextView
+                android:id="@+id/tvKopKecamatan"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="KECAMATAN MAMUJU"
+                android:textStyle="bold"
+                android:textSize="13sp"
+                android:textColor="#000000"
+                android:gravity="center" />
+
+            <TextView
+                android:id="@+id/tvKopDesa"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="DESA BATU PANNU"
+                android:textStyle="bold"
+                android:textSize="13sp"
+                android:textColor="#000000"
+                android:gravity="center" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Garis tebal di bawah kop surat -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1.5dp"
+        android:background="#000000"
+        android:layout_marginBottom="8dp" />
+
+    <!-- JUDUL: DAFTAR HADIR -->
+    <TextView
+        android:id="@+id/tvJudulLaporan"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="LAPORAN ABSENSI"
         android:textStyle="bold"
-        android:textSize="18sp"
+        android:textSize="15sp"
+        android:gravity="center"
+        android:textColor="#000000"
+        android:layout_marginBottom="2dp" />
+
+    <!-- Subjudul opsional -->
+    <TextView
+        android:id="@+id/tvSubJudulLaporan"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="APARAT DESA BATU PANNU"
+        android:textStyle="bold"
+        android:textSize="12sp"
         android:gravity="center"
         android:textColor="#000000"
         android:layout_marginBottom="4dp" />
-
-    <!-- KOP SURAT -->
-    <TextView
-        android:id="@+id/tvKopPreview"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="2dp"
-        android:gravity="center"
-        android:text=" DESA BATU PANNU KECAMATAN MAMUJU"
-        android:textColor="#000000"
-        android:textSize="12sp"
-        android:textStyle="bold" />
-
 
     <!-- Periode -->
     <TextView
@@ -192,15 +256,5 @@
             android:paddingVertical="3dp"
             android:background="@drawable/bg_table_header_cell" />
     </LinearLayout>
-
-    <!-- Tombol CETAK / UNDUH -->
-    <Button
-        android:id="@+id/btnCetakUnduh"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="CETAK / UNDUH"
-        android:backgroundTint="#4CAF50"
-        android:textColor="#000000"
-        android:layout_marginTop="12dp" />
 
 </LinearLayout>

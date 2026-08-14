@@ -5,19 +5,19 @@ import android.os.Bundle
 import android.widget.EditText
 import android.widget.SearchView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.absensiaparatbtp.database.AppDatabase
-import com.example.absensiaparatbtp.database.UserEntity
-import kotlinx.coroutines.launch
+import com.example.absensiaparatbtp.firebase.UserProfile
+import com.google.firebase.firestore.FirebaseFirestore
 
 class ProfilPenggunaActivity : AppCompatActivity() {
 
-    private var listPegawai = emptyList<UserEntity>()
+    private var listPegawai = emptyList<UserProfile>()
     private lateinit var adapter: ProfilPegawaiAdapter
+    private lateinit var firestore: FirebaseFirestore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,7 +27,7 @@ class ProfilPenggunaActivity : AppCompatActivity() {
         val searchViewProfil = findViewById<SearchView>(R.id.searchViewProfil)
         val rvProfilPegawai = findViewById<RecyclerView>(R.id.rvProfilPegawai)
 
-        // 🔹 Tambahan: ubah warna teks & hint di dalam SearchView
+        // Ubah warna teks & hint di dalam SearchView
         val searchEditTextId = searchViewProfil.context.resources
             .getIdentifier("android:id/search_src_text", null, null)
         val searchEditText = searchViewProfil.findViewById<EditText>(searchEditTextId)
@@ -41,27 +41,17 @@ class ProfilPenggunaActivity : AppCompatActivity() {
 
         rvProfilPegawai.layoutManager = LinearLayoutManager(this)
 
-        val db = AppDatabase.getInstance(this)
-        val userDao = db.userDao()
+        firestore = FirebaseFirestore.getInstance()
 
-        // ⬇️ ADAPTER: klik item → buka layar edit
+        // ADAPTER: klik item → buka layar edit
         adapter = ProfilPegawaiAdapter(emptyList()) { user ->
             val intent = Intent(this, EditProfilPegawaiActivity::class.java)
-            intent.putExtra("USER_ID", user.id)   // pastikan UserEntity punya field id (PrimaryKey)
+            intent.putExtra("USER_ID", user.uid) // uid Firebase (teks), bukan lagi angka Room
             startActivity(intent)
         }
         rvProfilPegawai.adapter = adapter
 
-        // load awal
-        lifecycleScope.launch {
-            try {
-                val users = userDao.getAllUsers()
-                listPegawai = users
-                adapter.setData(listPegawai)
-            } catch (e: Exception) {
-                adapter.setData(emptyList())
-            }
-        }
+        muatDaftarPegawai()
 
         searchViewProfil.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean = false
@@ -88,20 +78,26 @@ class ProfilPenggunaActivity : AppCompatActivity() {
         }
     }
 
-    // 🔹 Saat kembali dari edit/hapus, refresh list
+    private fun muatDaftarPegawai() {
+        firestore.collection("users")
+            .get()
+            .addOnSuccessListener { snapshot ->
+                listPegawai = snapshot.documents.mapNotNull { it.toObject(UserProfile::class.java) }
+                adapter.setData(listPegawai)
+            }
+            .addOnFailureListener { e ->
+                adapter.setData(emptyList())
+                Toast.makeText(
+                    this,
+                    "Gagal ambil data pegawai: ${e.localizedMessage ?: "Terjadi kesalahan"}",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+    }
+
+    // Saat kembali dari edit/hapus, refresh list
     override fun onResume() {
         super.onResume()
-        val db = AppDatabase.getInstance(this)
-        val userDao = db.userDao()
-
-        lifecycleScope.launch {
-            try {
-                val users = userDao.getAllUsers()
-                listPegawai = users
-                adapter.setData(listPegawai)
-            } catch (e: Exception) {
-                adapter.setData(emptyList())
-            }
-        }
+        muatDaftarPegawai()
     }
 }

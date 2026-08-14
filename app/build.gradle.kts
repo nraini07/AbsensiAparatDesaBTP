@@ -1,7 +1,8 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id("kotlin-kapt")
+    // Wajib untuk membaca google-services.json (config Firebase project Anda)
+    id("com.google.gms.google-services")
 
 }
 
@@ -34,12 +35,17 @@ dependencies {
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("com.google.android.gms:play-services-location:21.2.0")
 
-    // Room
-    implementation("androidx.room:room-runtime:2.6.1")
-    implementation("androidx.room:room-ktx:2.6.1")
-    kapt("androidx.room:room-compiler:2.6.1")
     // PDF Library (iText)
     implementation("com.itextpdf:itext-core:8.0.1")
+
+    // Firebase: BoM mengatur semua versi library Firebase otomatis, jadi tidak
+    // perlu tulis versi manual di tiap dependency di bawahnya.
+    implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
+    implementation("com.google.firebase:firebase-auth-ktx")       // login/register
+    implementation("com.google.firebase:firebase-firestore-ktx")  // database absensi & profil pegawai
+
+    // Coroutines untuk memakai Firebase dengan suspend function (await())
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
 
     // (opsional) kalau mau unit test / androidTest, bisa tambahkan lagi
 }

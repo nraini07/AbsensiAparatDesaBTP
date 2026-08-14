@@ -10,7 +10,7 @@ import androidx.appcompat.app.AppCompatActivity
 
 class PegawaiDashboardActivity : AppCompatActivity() {
 
-    private var userId: Int = -1
+    private var userId: String = ""
     private var userNama: String = "Pegawai"
     private var loginLat: Double? = null
     private var loginLng: Double? = null
@@ -25,7 +25,7 @@ class PegawaiDashboardActivity : AppCompatActivity() {
         val btnRiwayatAbsensi = findViewById<LinearLayout>(R.id.btnRiwayatAbsensi)
         val btnLogoutPegawai = findViewById<ImageButton>(R.id.btnLogoutPegawai)
 
-        userId = intent.getIntExtra("USER_ID", -1)
+        userId = intent.getStringExtra("USER_ID") ?: ""
         userNama = intent.getStringExtra("USER_NAMA") ?: "Pegawai"
         loginLat = intent.getDoubleExtra("LOGIN_LAT", Double.NaN)
         loginLng = intent.getDoubleExtra("LOGIN_LNG", Double.NaN)

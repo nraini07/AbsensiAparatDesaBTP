@@ -7,20 +7,27 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Spinner
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.absensiaparatbtp.database.AppDatabase
-import kotlinx.coroutines.launch
+import com.example.absensiaparatbtp.firebase.AbsensiRecord
+import com.google.firebase.firestore.FirebaseFirestore
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 
 class RiwayatAbsensiActivity : AppCompatActivity() {
 
-    private var userId: Int = -1
+    private var userId: String = ""
     private var userNama: String = "Pegawai"
+
+    // Semua data absensi pegawai ini disimpan di memori setelah 1x ambil dari
+    // Firestore, supaya filter tanggal/bulan tidak perlu query ulang ke server
+    // tiap kali (lebih hemat kuota baca & lebih responsif).
+    private var semuaData: List<AbsensiRecord> = emptyList()
+
+    private lateinit var adapter: RiwayatAbsensiAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,19 +38,51 @@ class RiwayatAbsensiActivity : AppCompatActivity() {
         val tvTanggalFilter = findViewById<TextView>(R.id.tvTanggalFilter)
         val rvRiwayat = findViewById<RecyclerView>(R.id.rvRiwayatAbsensi)
 
-        userId = intent.getIntExtra("USER_ID", -1)
+        userId = intent.getStringExtra("USER_ID") ?: ""
         userNama = intent.getStringExtra("USER_NAMA") ?: "Pegawai"
 
         rvRiwayat.layoutManager = LinearLayoutManager(this)
-        val adapter = RiwayatAbsensiAdapter(emptyList())
+        adapter = RiwayatAbsensiAdapter(emptyList())
         rvRiwayat.adapter = adapter
 
-        val db = AppDatabase.getInstance(this)
-        val dao = db.absensiDao()
+        val firestore = FirebaseFirestore.getInstance()
 
-        // POPUP KALENDER
+        tvBack.setOnClickListener {
+            onBackPressedDispatcher.onBackPressed()
+        }
+
+        tvTanggalFilter.text = "Semua tanggal"
+
+        if (userId.isEmpty()) {
+            Toast.makeText(this, "Sesi tidak valid, silakan login ulang", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // Ambil SEMUA riwayat absensi pegawai ini sekali saja dari Firestore
+        firestore.collection("absensi")
+            .whereEqualTo("userId", userId)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                semuaData = snapshot.documents
+                    .mapNotNull { it.toObject(AbsensiRecord::class.java) }
+                    // Terbaru dulu. createdAt bisa null kalau baru saja disimpan &
+                    // server timestamp-nya belum ke-sync ke cache lokal, jadi taruh
+                    // yang null di depan supaya tetap kelihatan.
+                    .sortedByDescending { it.createdAt }
+
+                adapter.setData(semuaData)
+                setupSpinnerBulan(spinnerBulan)
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(
+                    this,
+                    "Gagal ambil riwayat: ${e.localizedMessage ?: "Terjadi kesalahan"}",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+
+        // POPUP KALENDER untuk filter per tanggal spesifik
         val calendar = Calendar.getInstance()
-
         tvTanggalFilter.setOnClickListener {
             val year = calendar.get(Calendar.YEAR)
             val month = calendar.get(Calendar.MONTH)
@@ -59,88 +98,77 @@ class RiwayatAbsensiActivity : AppCompatActivity() {
 
                     tvTanggalFilter.text = tanggalStr
 
-                    lifecycleScope.launch {
-                        val dataTanggal = dao.getRiwayatByUserAndTanggal(userId, tanggalStr)
-                        runOnUiThread {
-                            adapter.setData(dataTanggal)
-                        }
-                    }
+                    val hasil = semuaData.filter { it.tanggal == tanggalStr }
+                    adapter.setData(hasil)
+
+                    // Reset spinner bulan ke "Semua" supaya tidak membingungkan
+                    // (dua filter aktif sekaligus)
+                    spinnerBulan.setSelection(0)
                 },
                 year, month, day
             )
-
             dialog.show()
         }
+    }
 
-        // SPINNER BULAN
-        lifecycleScope.launch {
-            val listBulan = dao.getBulanDenganData(userId)  // contoh: ["04-2026", "05-2026"]
+    /**
+     * Bangun daftar bulan (untuk spinner) dari data yang sudah ada di memori,
+     * dengan cara ekstrak "MM-yyyy" dari field tanggal (format dd-MM-yyyy).
+     */
+    private fun setupSpinnerBulan(spinnerBulan: Spinner) {
+        val namaBulan = arrayOf(
+            "", "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+            "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+        )
 
-            val listLabel = mutableListOf<String>()
-            listLabel.add("Semua")
+        // Ambil semua "MM-yyyy" unik dari data, urutkan terbaru dulu
+        val listBulan = semuaData
+            .mapNotNull { record ->
+                if (record.tanggal.length == 10) record.tanggal.substring(3, 10) else null
+            }
+            .distinct()
+            .sortedDescending()
 
-            val namaBulan = arrayOf(
-                "", "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-                "Juli", "Agustus", "September", "Oktober", "November", "Desember"
-            )
+        val listLabel = mutableListOf("Semua")
+        for (b in listBulan) {
+            val mm = b.substring(0, 2)
+            val yy = b.substring(3, 7)
+            val bulanIndex = mm.toIntOrNull() ?: 0
+            val label = if (bulanIndex in 1..12) {
+                "${namaBulan[bulanIndex]} $yy"
+            } else {
+                b
+            }
+            listLabel.add(label)
+        }
 
-            for (b in listBulan) {
-                val mm = b.substring(0, 2)
-                val yy = b.substring(3, 7)
-                val bulanIndex = mm.toIntOrNull() ?: 0
-                val label = if (bulanIndex in 1..12) {
-                    "${namaBulan[bulanIndex]} $yy"
+        val bulanAdapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            listLabel
+        )
+        bulanAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerBulan.adapter = bulanAdapter
+
+        spinnerBulan.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
+                val hasil = if (position == 0) {
+                    semuaData
                 } else {
-                    b
-                }
-                listLabel.add(label)
-            }
-
-            runOnUiThread {
-                val bulanAdapter = ArrayAdapter(
-                    this@RiwayatAbsensiActivity,
-                    android.R.layout.simple_spinner_item,
-                    listLabel
-                )
-                bulanAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-                spinnerBulan.adapter = bulanAdapter
-            }
-
-            val dataAwal = dao.getRiwayatByUser(userId)
-            runOnUiThread {
-                adapter.setData(dataAwal)
-            }
-
-            runOnUiThread {
-                spinnerBulan.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                    override fun onItemSelected(
-                        parent: AdapterView<*>?,
-                        view: View?,
-                        position: Int,
-                        id: Long
-                    ) {
-                        lifecycleScope.launch {
-                            val data = if (position == 0) {
-                                dao.getRiwayatByUser(userId)
-                            } else {
-                                val bulanDipilih = listBulan[position - 1]
-                                dao.getRiwayatByUserAndBulan(userId, bulanDipilih)
-                            }
-                            runOnUiThread {
-                                adapter.setData(data)
-                            }
-                        }
+                    val bulanDipilih = listBulan[position - 1]
+                    semuaData.filter { record ->
+                        record.tanggal.length == 10 && record.tanggal.substring(3, 10) == bulanDipilih
                     }
-
-                    override fun onNothingSelected(parent: AdapterView<*>?) { }
                 }
+                adapter.setData(hasil)
             }
-        }
 
-        tvBack.setOnClickListener {
-            onBackPressedDispatcher.onBackPressed()
+            override fun onNothingSelected(parent: AdapterView<*>?) { }
         }
-
-        tvTanggalFilter.text = "00-00-0000"
     }
 }

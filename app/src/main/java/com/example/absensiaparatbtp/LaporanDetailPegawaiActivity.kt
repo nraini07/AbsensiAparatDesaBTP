@@ -6,16 +6,15 @@ import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.absensiaparatbtp.database.AppDatabase
-import kotlinx.coroutines.launch
+import com.example.absensiaparatbtp.firebase.AbsensiRecord
+import com.google.firebase.firestore.FirebaseFirestore
 
 class LaporanDetailPegawaiActivity : AppCompatActivity() {
 
     private lateinit var adapter: RiwayatAbsensiAdapter
-    private var listRiwayatAbsensi = emptyList<com.example.absensiaparatbtp.database.AbsensiEntity>()
+    private var listRiwayatAbsensi: List<AbsensiRecord> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,12 +37,21 @@ class LaporanDetailPegawaiActivity : AppCompatActivity() {
             adapter = RiwayatAbsensiAdapter(emptyList())
             rvRiwayatDetail.adapter = adapter
 
-            val db = AppDatabase.getInstance(this)
-            val absensiDao = db.absensiDao()
+            val firestore = FirebaseFirestore.getInstance()
 
-            lifecycleScope.launch {
-                try {
-                    val riwayatAbsensi = absensiDao.getAbsensiByNamaPegawai(namaPegawai)
+            // Catatan: query berdasarkan NAMA (bukan userId) karena halaman ini
+            // dibuka dari daftar laporan yang cuma bawa nama+jabatan pegawai.
+            // Konsekuensinya: kalau ada 2 pegawai dengan nama PERSIS sama,
+            // datanya akan tercampur. Idealnya nanti diganti query by userId
+            // begitu halaman sebelumnya (daftar laporan) juga sudah bawa userId.
+            firestore.collection("absensi")
+                .whereEqualTo("namaPegawai", namaPegawai)
+                .get()
+                .addOnSuccessListener { snapshot ->
+                    val riwayatAbsensi = snapshot.documents
+                        .mapNotNull { it.toObject(AbsensiRecord::class.java) }
+                        .sortedByDescending { it.tanggal }
+
                     listRiwayatAbsensi = riwayatAbsensi
 
                     val bulanSet = mutableSetOf<String>()
@@ -80,58 +88,50 @@ class LaporanDetailPegawaiActivity : AppCompatActivity() {
                         }
                     }
 
-                    runOnUiThread {
-                        tvNamaPegawai.text = namaPegawai
-                        tvJabatan.text = "Jabatan: $jabatanPegawai"
+                    val adapterSpinner = ArrayAdapter(
+                        this,
+                        android.R.layout.simple_spinner_item,
+                        bulanLabelList
+                    )
+                    adapterSpinner.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                    spinnerBulanDetail.adapter = adapterSpinner
 
-                        val adapterSpinner = ArrayAdapter(
-                            this@LaporanDetailPegawaiActivity,
-                            android.R.layout.simple_spinner_item,
-                            bulanLabelList
-                        )
-                        adapterSpinner.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-                        spinnerBulanDetail.adapter = adapterSpinner
+                    adapter.setData(riwayatAbsensi)
 
-                        adapter.setData(riwayatAbsensi.sortedByDescending { it.tanggal })
-
-                        spinnerBulanDetail.setOnItemSelectedListener(object : android.widget.AdapterView.OnItemSelectedListener {
-                            override fun onItemSelected(
-                                parent: android.widget.AdapterView<*>?,
-                                view: android.view.View?,
-                                position: Int,
-                                id: Long
-                            ) {
-                                if (position == 0) {
-                                    adapter.setData(riwayatAbsensi.sortedByDescending { it.tanggal })
-                                } else if (position > 0 && position <= bulanList.size) {
-                                    val bulanSelected = bulanList[position - 1]
-                                    val filtered = riwayatAbsensi.filter { absensi ->
-                                        val parts = absensi.tanggal.split("-")
-                                        if (parts.size == 3) {
-                                            val bulan = String.format("%02d-%s", parts[1].toIntOrNull() ?: 0, parts[2])
-                                            bulan == bulanSelected
-                                        } else {
-                                            false
-                                        }
+                    spinnerBulanDetail.setOnItemSelectedListener(object : android.widget.AdapterView.OnItemSelectedListener {
+                        override fun onItemSelected(
+                            parent: android.widget.AdapterView<*>?,
+                            view: android.view.View?,
+                            position: Int,
+                            id: Long
+                        ) {
+                            if (position == 0) {
+                                adapter.setData(riwayatAbsensi)
+                            } else if (position > 0 && position <= bulanList.size) {
+                                val bulanSelected = bulanList[position - 1]
+                                val filtered = riwayatAbsensi.filter { absensi ->
+                                    val parts = absensi.tanggal.split("-")
+                                    if (parts.size == 3) {
+                                        val bulan = String.format("%02d-%s", parts[1].toIntOrNull() ?: 0, parts[2])
+                                        bulan == bulanSelected
+                                    } else {
+                                        false
                                     }
-                                    adapter.setData(filtered.sortedByDescending { it.tanggal })
                                 }
+                                adapter.setData(filtered)
                             }
+                        }
 
-                            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
-                        })
-                    }
-
-                } catch (e: Exception) {
-                    runOnUiThread {
-                        Toast.makeText(
-                            this@LaporanDetailPegawaiActivity,
-                            "Error: ${e.message}",
-                            Toast.LENGTH_LONG
-                        ).show()
-                    }
+                        override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
+                    })
                 }
-            }
+                .addOnFailureListener { e ->
+                    Toast.makeText(
+                        this,
+                        "Gagal ambil data: ${e.localizedMessage ?: "Terjadi kesalahan"}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
 
             tvBack.setOnClickListener {
                 onBackPressedDispatcher.onBackPressed()

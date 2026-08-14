@@ -12,11 +12,10 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.absensiaparatbtp.database.AppDatabase
-import kotlinx.coroutines.launch
+import com.example.absensiaparatbtp.firebase.AbsensiRecord
+import com.google.firebase.firestore.FirebaseFirestore
 import java.util.Calendar
 
 class LaporanAbsensiActivity : AppCompatActivity() {
@@ -25,6 +24,13 @@ class LaporanAbsensiActivity : AppCompatActivity() {
     private lateinit var adapter: LaporanRingkasanAdapter
     private var bulanDipilih = 0
     private var tahunDipilih = 0
+
+    // Semua absensi (semua pegawai) diambil sekali dari Firestore, lalu
+    // difilter per bulan/tahun di memori supaya ganti bulan/tahun instan
+    // tanpa perlu query ulang ke server tiap kali.
+    private var semuaAbsensi: List<AbsensiRecord> = emptyList()
+
+    private lateinit var firestore: FirebaseFirestore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,25 +49,57 @@ class LaporanAbsensiActivity : AppCompatActivity() {
             val tvTotalSakit = findViewById<TextView>(R.id.tvTotalSakit)
             val tvTotalKeluar = findViewById<TextView>(R.id.tvTotalKeluar)
 
-            val db = AppDatabase.getInstance(this)
-            val dao = db.absensiDao()
-            val userDao = db.userDao()
+            firestore = FirebaseFirestore.getInstance()
+
+            // Ambil SEMUA data absensi (semua pegawai) sekali di awal.
+            firestore.collection("absensi")
+                .get()
+                .addOnSuccessListener { snapshot ->
+                    semuaAbsensi = snapshot.documents
+                        .mapNotNull { it.toObject(AbsensiRecord::class.java) }
+
+                    if (bulanDipilih > 0 && tahunDipilih > 0) {
+                        loadLaporan(tvTotalMasuk, tvTotalIzin, tvTotalSakit, tvTotalKeluar)
+                    }
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(
+                        this,
+                        "Gagal ambil data laporan: ${e.localizedMessage ?: "Terjadi kesalahan"}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
 
             // LIST UTAMA: tetap bisa diklik
             rvLaporanAbsensi.layoutManager = LinearLayoutManager(this)
             adapter = LaporanRingkasanAdapter(emptyList()) { namaPegawai ->
-                lifecycleScope.launch {
-                    val user = userDao.getUserByNama(namaPegawai)
-                    val jabatanPegawai = user?.jabatan ?: "-"
+                // Ambil jabatan pegawai dari koleksi "users" berdasarkan nama
+                firestore.collection("users")
+                    .whereEqualTo("nama", namaPegawai)
+                    .limit(1)
+                    .get()
+                    .addOnSuccessListener { snap ->
+                        val jabatanPegawai = snap.documents.firstOrNull()
+                            ?.getString("jabatan") ?: "-"
 
-                    val intent = Intent(
-                        this@LaporanAbsensiActivity,
-                        LaporanDetailPegawaiActivity::class.java
-                    )
-                    intent.putExtra("NAMA_PEGAWAI", namaPegawai)
-                    intent.putExtra("JABATAN_PEGAWAI", jabatanPegawai)
-                    startActivity(intent)
-                }
+                        val intent = Intent(
+                            this@LaporanAbsensiActivity,
+                            LaporanDetailPegawaiActivity::class.java
+                        )
+                        intent.putExtra("NAMA_PEGAWAI", namaPegawai)
+                        intent.putExtra("JABATAN_PEGAWAI", jabatanPegawai)
+                        startActivity(intent)
+                    }
+                    .addOnFailureListener {
+                        // Tetap buka detailnya walau jabatan gagal diambil
+                        val intent = Intent(
+                            this@LaporanAbsensiActivity,
+                            LaporanDetailPegawaiActivity::class.java
+                        )
+                        intent.putExtra("NAMA_PEGAWAI", namaPegawai)
+                        intent.putExtra("JABATAN_PEGAWAI", "-")
+                        startActivity(intent)
+                    }
             }
             rvLaporanAbsensi.adapter = adapter
 
@@ -106,14 +144,7 @@ class LaporanAbsensiActivity : AppCompatActivity() {
                     if (position > 0) {
                         bulanDipilih = position
                         if (tahunDipilih > 0) {
-                            loadLaporan(
-                                dao,
-                                tvTotalMasuk,
-                                tvTotalIzin,
-                                tvTotalSakit,
-                                tvTotalKeluar,
-                                bulanList[position]
-                            )
+                            loadLaporan(tvTotalMasuk, tvTotalIzin, tvTotalSakit, tvTotalKeluar)
                         }
                     }
                 }
@@ -131,14 +162,7 @@ class LaporanAbsensiActivity : AppCompatActivity() {
                 ) {
                     tahunDipilih = tahunList[position].toIntOrNull() ?: 0
                     if (bulanDipilih > 0 && tahunDipilih > 0) {
-                        loadLaporan(
-                            dao,
-                            tvTotalMasuk,
-                            tvTotalIzin,
-                            tvTotalSakit,
-                            tvTotalKeluar,
-                            bulanList[bulanDipilih]
-                        )
+                        loadLaporan(tvTotalMasuk, tvTotalIzin, tvTotalSakit, tvTotalKeluar)
                     }
                 }
 
@@ -193,7 +217,8 @@ class LaporanAbsensiActivity : AppCompatActivity() {
                 }
 
                 val bulanNama = bulanList[bulanDipilih]
-                showPreviewDialog(listRingkasan, bulanNama, tahunDipilih)
+                val pdfGenerator = PDFGenerator(this)
+                pdfGenerator.generateLaporanAbsensiPDF(listRingkasan, bulanNama, tahunDipilih)
             }
 
             tvBack.setOnClickListener {
@@ -213,7 +238,6 @@ class LaporanAbsensiActivity : AppCompatActivity() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_preview_laporan, null)
         val rvPreviewLaporan =
             dialogView.findViewById<RecyclerView>(R.id.rvPreviewLaporan)
-        val btnCetakUnduh = dialogView.findViewById<Button>(R.id.btnCetakUnduh)
 
         val tvPeriodePreview =
             dialogView.findViewById<TextView>(R.id.tvPeriodePreview)
@@ -246,68 +270,49 @@ class LaporanAbsensiActivity : AppCompatActivity() {
             .setView(dialogView)
             .create()
 
-        btnCetakUnduh.setOnClickListener {
-            val pdfGenerator = PDFGenerator(this)
-            pdfGenerator.generateLaporanAbsensiPDF(data, bulanNama, tahun)
-            dialog.dismiss()
-        }
-
         dialog.show()
     }
 
     private fun loadLaporan(
-        dao: com.example.absensiaparatbtp.database.AbsensiDao,
         tvTotalMasuk: TextView,
         tvTotalIzin: TextView,
         tvTotalSakit: TextView,
-        tvTotalKeluar: TextView,
-        bulanNama: String
+        tvTotalKeluar: TextView
     ) {
-        lifecycleScope.launch {
-            try {
-                val bulanStr = String.format("%02d-%04d", bulanDipilih, tahunDipilih)
-                val allAbsensi = dao.getAllAbsensi()
+        try {
+            val bulanStr = String.format("%02d-%04d", bulanDipilih, tahunDipilih)
 
-                val filteredAbsensi = allAbsensi.filter { absensi ->
-                    absensi.tanggal.contains(bulanStr)
-                }
-
-                val ringkasan = filteredAbsensi
-                    .groupBy { it.namaPegawai }
-                    .map { (nama, absensiList) ->
-                        LaporanRingkasanAbsensi(
-                            namaPegawai = nama,
-                            masuk = absensiList.count { it.jenisAbsensi == "Masuk" },
-                            izin = absensiList.count { it.jenisAbsensi == "Izin" },
-                            sakit = absensiList.count { it.jenisAbsensi == "Sakit" },
-                            keluar = absensiList.count { it.jenisAbsensi == "Keluar" }
-                        )
-                    }
-                    .sortedBy { it.namaPegawai }
-
-                listRingkasan = ringkasan
-
-                val totalMasuk = ringkasan.sumOf { it.masuk }
-                val totalIzin = ringkasan.sumOf { it.izin }
-                val totalSakit = ringkasan.sumOf { it.sakit }
-                val totalKeluar = ringkasan.sumOf { it.keluar }
-
-                runOnUiThread {
-                    adapter.setData(ringkasan)
-                    tvTotalMasuk.text = totalMasuk.toString()
-                    tvTotalIzin.text = totalIzin.toString()
-                    tvTotalSakit.text = totalSakit.toString()
-                    tvTotalKeluar.text = totalKeluar.toString()
-                }
-            } catch (e: Exception) {
-                runOnUiThread {
-                    Toast.makeText(
-                        this@LaporanAbsensiActivity,
-                        "Error: ${e.message}",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
+            val filteredAbsensi = semuaAbsensi.filter { absensi ->
+                absensi.tanggal.contains(bulanStr)
             }
+
+            val ringkasan = filteredAbsensi
+                .groupBy { it.namaPegawai }
+                .map { (nama, absensiList) ->
+                    LaporanRingkasanAbsensi(
+                        namaPegawai = nama,
+                        masuk = absensiList.count { it.jenisAbsensi == "Masuk" },
+                        izin = absensiList.count { it.jenisAbsensi == "Izin" },
+                        sakit = absensiList.count { it.jenisAbsensi == "Sakit" },
+                        keluar = absensiList.count { it.jenisAbsensi == "Keluar" }
+                    )
+                }
+                .sortedBy { it.namaPegawai }
+
+            listRingkasan = ringkasan
+
+            val totalMasuk = ringkasan.sumOf { it.masuk }
+            val totalIzin = ringkasan.sumOf { it.izin }
+            val totalSakit = ringkasan.sumOf { it.sakit }
+            val totalKeluar = ringkasan.sumOf { it.keluar }
+
+            adapter.setData(ringkasan)
+            tvTotalMasuk.text = totalMasuk.toString()
+            tvTotalIzin.text = totalIzin.toString()
+            tvTotalSakit.text = totalSakit.toString()
+            tvTotalKeluar.text = totalKeluar.toString()
+        } catch (e: Exception) {
+            Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
 }
